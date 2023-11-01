@@ -1,8 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
-import cv2
-import PIL
+import pandas as pd
 
 # region global var
 
@@ -15,28 +14,35 @@ bias = 0
 
 def windwos():
 
-    # get the result and open new window
+    def PreProcessing(SelectedClass, SelectedFeature, BiasVal):
+        data = pd.read_csv("Dry_Beans_Dataset.csv")  # read file
+        x = data[SelectedFeature]  # take two features only
+        print(x.head())
+
+    # Pass the result and open new window
     def bridge():
         try:
-            if( len(selected_class[-1]) == 2 & len(selected_feature[-1]) == 2):
-                # you can get the selected feature by the variable selected_feature
-                print("selected class: ", selected_class[-1], "\n")
-                # you can get the selected feature by the variable selected_feature
-                print("selected feature: ", selected_feature[-1],"\n")
-                # you can know bias or not by variable radio_var.get()
-                print("bias1 or not0: ", radio_var.get(),"\n")
+
+            if( len(selected_class[-1]),len(selected_feature[-1]) == 2):
+
+                # # you can get the selected feature by the variable selected_feature
+                # print("selected class: ", selected_class[-1], "\n")
+                # # you can get the selected feature by the variable selected_feature
+                # print("selected feature: ", selected_feature[-1],"\n")
+                # # you can know bias or not by variable radio_var.get()
+                # print("bias1 or not0: ", radio_var.get(),"\n")
                 # you can know the number of bias using text_box.get("1.0", "end-1c")
                 val = text_box.get("1.0", "end-1c")
 
                 if(radio_var.get() == "yes"):
                     try:
-                        integer_value = int(val)
+                        val = int(val)
                     except:
                         messagebox.showerror("Error", "Bias should be a Number")
                         text_box.delete("1.0", "end")
                 else:
                     val = 0
-                print("textbox val: ", val,"\n")
+                # print("textbox val: ", val,"\n")
 
                 root.destroy()
                 # call another window
@@ -46,6 +52,8 @@ def windwos():
 
         except:
             messagebox.showerror("Error", "!!احا")
+
+        PreProcessing(selected_class[-1], selected_feature[-1], val)
 
     # using to create a new window
     def restart():
@@ -143,7 +151,7 @@ def windwos():
     infolabel1 = tk.Label(text="Choose Two Classes",font=("Times New Roman", 18),fg="blue",pady=8)
     infolabel1.pack()
 
-    avalible_class = ["Class 1", "Class 2", "Class 3"]
+    avalible_class = ["BOMBAY", "CALI", "SIRA"]
 
     checkboxes1 = create_class_checkboxes(avalible_class)
 
@@ -162,7 +170,7 @@ def windwos():
     infolabel2 = tk.Label(text="Choose Two Features",font=("Times New Roman", 18),fg="blue",pady=8)
     infolabel2.pack()
 
-    avalible_choices = ["Feature 1", "Feature 2", "Feature 3", "Feature 4", "Feature 5"]
+    avalible_choices = ["Area", "Perimeter", "MajorAxisLength", "MinorAxisLength", "roundnes"]
 
     checkboxes = create_checkboxes(avalible_choices)
 
