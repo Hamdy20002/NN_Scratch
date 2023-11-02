@@ -2,13 +2,16 @@ import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
 import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+import warnings
 
 # region global var
 
 selected_class = []
 selected_feature = []
 bias = 0
-
+label_encoder = LabelEncoder()
 # endregion
 
 
@@ -16,22 +19,49 @@ def windwos():
 
     def PreProcessing(SelectedClass, SelectedFeature, BiasVal):
         data = pd.read_csv("Dry_Beans_Dataset.csv")  # read file
-        x = data[SelectedFeature]  # take two features only
-        print(x.head())
+        class_data = data[data['Class'].isin(SelectedClass)]  # take two classes
+        data = class_data[SelectedFeature]  # take two features only
+        data['Class'] = class_data.iloc[:,-1]
+
+        if(SelectedFeature[0] != "Area"):  # convert from string to float
+            data[SelectedFeature[0]] = data[SelectedFeature[0]].str.replace("٫", ".").astype(float)
+            data[SelectedFeature[1]] = data[SelectedFeature[1]].str.replace("٫", ".").astype(float)
+        else:
+            data[SelectedFeature[1]] = data[SelectedFeature[1]].str.replace("٫", ".").astype(float)
+
+        data = data.fillna(data.mean())  # fillna
+
+        Class1 = data.iloc[:50, :]
+        Class2 = data.iloc[50:, :]
+
+        x_train1, x_test1, y_train1, y_test1 = train_test_split(Class1.iloc[:, :-1].values, Class1.iloc[:, -1].values, test_size = 20, random_state = 200)
+        x_train2, x_test2, y_train2, y_test2 = train_test_split(Class2.iloc[:, :-1].values, Class2.iloc[:, -1].values, test_size = 20, random_state = 200)
+
+        x_train1 = pd.DataFrame(x_train1, columns=Class1.iloc[:, :-1].columns)
+        x_test1 = pd.DataFrame(x_test1, columns=Class1.iloc[:, :-1].columns)
+        y_train1 = pd.DataFrame(y_train1, columns=[Class1.columns[-1]])
+        y_test1 = pd.DataFrame(y_test1, columns=[Class1.columns[-1]])
+
+        x_train2 = pd.DataFrame(x_train2, columns=Class2.iloc[:, :-1].columns)
+        x_test2 = pd.DataFrame(x_test2, columns=Class2.iloc[:, :-1].columns)
+        y_train2 = pd.DataFrame(y_train2, columns=[Class1.columns[-1]])
+        y_test2 = pd.DataFrame(y_test2, columns=[Class1.columns[-1]])
+
+        X_TRAIN = pd.concat([x_train1, x_train2], axis=0)
+        X_TEST = pd.concat([x_test1, x_test2], axis=0)
+
+        Y_TRAIN = pd.concat([y_train1, y_train2], axis=0)
+        Y_TRAIN['Class'] = label_encoder.fit_transform(Y_TRAIN)
+
+        Y_TEST = pd.concat([y_test1, y_test2], axis=0)
+        Y_TEST['Class'] = label_encoder.fit_transform(Y_TEST)
+
 
     # Pass the result and open new window
-    def bridge():
+    def form1():
         try:
+            if( len(selected_class[-1]) == 2 & len(selected_feature[-1]) == 2):
 
-            if( len(selected_class[-1]),len(selected_feature[-1]) == 2):
-
-                # # you can get the selected feature by the variable selected_feature
-                # print("selected class: ", selected_class[-1], "\n")
-                # # you can get the selected feature by the variable selected_feature
-                # print("selected feature: ", selected_feature[-1],"\n")
-                # # you can know bias or not by variable radio_var.get()
-                # print("bias1 or not0: ", radio_var.get(),"\n")
-                # you can know the number of bias using text_box.get("1.0", "end-1c")
                 val = text_box.get("1.0", "end-1c")
 
                 if(radio_var.get() == "yes"):
@@ -40,9 +70,9 @@ def windwos():
                     except:
                         messagebox.showerror("Error", "Bias should be a Number")
                         text_box.delete("1.0", "end")
+                        restart()
                 else:
                     val = 0
-                # print("textbox val: ", val,"\n")
 
                 root.destroy()
                 # call another window
@@ -208,7 +238,7 @@ def windwos():
 
     # region start_Program button
 
-    prog_button = tk.Button(root, text= "Launch",font=("Times New Roman", 15, "bold"), command=bridge)
+    prog_button = tk.Button(root, text= "Launch",font=("Times New Roman", 15, "bold"), command=form1)
     prog_button.place(x="99",y="540")
 
     # endregion
@@ -216,5 +246,6 @@ def windwos():
     root.mainloop()
 
 
+warnings.filterwarnings("ignore")
 windwos()
 print("End Program")
