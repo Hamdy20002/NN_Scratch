@@ -13,6 +13,7 @@ selected_class = []
 selected_feature = []
 bias = 0
 label_encoder = LabelEncoder()
+
 # endregion
 
 
@@ -38,7 +39,6 @@ def windwos():
                         val = 0
 
                     root.destroy()
-                    # call another window
                 else:
                     messagebox.showerror("Error", "Requirements not met")
 
@@ -203,6 +203,103 @@ def windwos():
         seperated_line3.pack()
         # endregion
 
+        # region Program button
+
+        prog_button = tk.Button(root, text="Next", font=("Times New Roman", 15, "bold"), command=launch)
+        prog_button.place(x="99", y="540")
+
+        # endregion
+
+        root.mainloop()
+
+    def form2():
+
+        def launch():
+
+            Learning = Learning_Text.get("1.0", "end-1c")
+            epochs = epochs_Text.get("1.0", "end-1c")
+            MSE = MSE_Text.get("1.0", "end-1c")
+
+            try:
+
+                Learning = int(Learning)
+                epochs = int(epochs)
+                MSE = int(MSE)
+
+                global return_values
+                return_values = (
+                    Learning,
+                    epochs,
+                    MSE,
+                    radio_var.get()
+                )
+
+                root.destroy()
+            except:
+
+                messagebox.showerror("Error", "Enter Numbers")
+
+        # region Base of Tkinter Window
+
+        root = tk.Tk()
+        root.title("Task1")
+        root.iconbitmap("images\FCIS.ico")
+        root.geometry("300x600")
+        root.resizable(width=False, height=False)
+
+        # endregion
+
+        # region Learning Rate
+        Learning_Label = tk.Label(text="Learning Rate", font=("Times New Roman", 12), fg="blue", pady=8)
+        Learning_Label.pack(anchor='w')
+
+        Learning_Text = tk.Text(root, height=1, width=18, font=("Helvetica", 12))
+        Learning_Text.pack()
+        # endregion
+
+        # region seperated line
+        seperated_line1 = tk.Label(root, text="----------------------------------------------------")
+        seperated_line1.pack()
+        # endregion
+
+        # region epochs
+        epochs_Label = tk.Label(text="Number of Epochs", font=("Times New Roman", 12), fg="blue", pady=8)
+        epochs_Label.pack(anchor='w')
+
+        epochs_Text = tk.Text(root, height=1, width=18, font=("Helvetica", 12))
+        epochs_Text.pack()
+        # endregion
+
+        # region seperated line
+        seperated_line1 = tk.Label(root, text="----------------------------------------------------")
+        seperated_line1.pack()
+        # endregion
+
+        # region MSE
+        MSE_Label = tk.Label(text="MSE threshold ", font=("Times New Roman", 12), fg="blue", pady=8)
+        MSE_Label.pack(anchor='w')
+
+        MSE_Text = tk.Text(root, height=1, width=18, font=("Helvetica", 12))
+        MSE_Text.pack()
+        # endregion
+
+        # region seperated line
+        seperated_line1 = tk.Label(root, text="----------------------------------------------------")
+        seperated_line1.pack()
+        # endregion
+
+        # region Choose Algorithm
+
+        radio_var = tk.StringVar()
+
+        radio_button1 = tk.Radiobutton(root, text="Perceptron Algo", variable=radio_var, value="Perceptron", font=("Helvetica", 12))
+        radio_button1.pack(anchor="w")
+
+        radio_button2 = tk.Radiobutton(root, text="AdaLine Algo", variable=radio_var, value="AdaLine", font=("Helvetica", 12))
+        radio_button2.pack(anchor="w")
+
+        # endregion
+
         # region start_Program button
 
         prog_button = tk.Button(root, text="Launch", font=("Times New Roman", 15, "bold"), command=launch)
@@ -211,24 +308,6 @@ def windwos():
         # endregion
 
         root.mainloop()
-
-    def main(SelectedClass, SelectedFeature, BiasVal):
-
-        X_TRAIN, X_TEST, Y_TRAIN, Y_TEST = PreProcessing(SelectedClass, SelectedFeature)
-
-        # region (W)RandomNumber
-
-        if(BiasVal != 0):
-            W0 = BiasVal
-            W1 = random.uniform(-1, 1)
-        else:
-            W0 = random.uniform(-1, 1)
-            W1 = random.uniform(-1, 1)
-
-
-        #endregion
-
-        # form2()
 
     def PreProcessing(SelectedClass, SelectedFeature):
         data = pd.read_csv("Dry_Beans_Dataset.csv")  # read file
@@ -270,6 +349,34 @@ def windwos():
         Y_TEST['Class'] = label_encoder.fit_transform(Y_TEST)
 
         return X_TRAIN, X_TEST, Y_TRAIN, Y_TEST
+
+    def main(SelectedClass, SelectedFeature, BiasVal):
+
+        # region get the Data
+
+        X_TRAIN, X_TEST, Y_TRAIN, Y_TEST = PreProcessing(SelectedClass, SelectedFeature)
+
+        # endregion
+
+        # region (W)RandomNumber
+
+        if(BiasVal != 0):
+            W0 = BiasVal
+            W1 = random.uniform(-1, 1)
+        else:
+            W0 = random.uniform(-1, 1)
+            W1 = random.uniform(-1, 1)
+
+
+        #endregion
+
+        # region get values for algo
+
+        form2()
+        if return_values is not None:
+            learning_rate, num_epochs, MSE, Algo = return_values
+        print(learning_rate, num_epochs, MSE, Algo)
+        # endregion
 
     form1()
 
