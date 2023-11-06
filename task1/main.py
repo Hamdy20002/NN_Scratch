@@ -374,14 +374,10 @@ def windwos():
         ax.scatter(X_TEST_reset.iloc[:, 0], X_TEST_reset.iloc[:, 1], c=Y_TEST_reset['Class'], cmap='coolwarm',
                    label='Data Points')
 
-        if len(Weight) == 2:  # For 2D classification with two weights (1 bias + 1 weight for 2D)
-            bias, weight1 = Weight[0], Weight[1]
+        if len(Weight) == 2:  # For 2D classification with only two weights (no bias)
+            weight1, weight2 = Weight[0], Weight[1]
             x_values = np.linspace(X_TEST_reset.iloc[:, 0].min(), X_TEST_reset.iloc[:, 0].max(), 100)
-            y_values = (-bias - weight1 * x_values) / weight1
-        elif len(Weight) == 3:  # For 2D classification with three weights (1 bias + 2 weights for 2D)
-            bias, weight1, weight2 = Weight[0], Weight[1], Weight[2]
-            x_values = np.linspace(X_TEST_reset.iloc[:, 0].min(), X_TEST_reset.iloc[:, 0].max(), 100)
-            y_values = (-bias - weight1 * x_values) / weight2
+            y_values = (-weight1 * x_values) / weight2
 
         # Plot the decision boundary line
         ax.plot(x_values, y_values, label='Decision Boundary', color='green')
