@@ -366,48 +366,32 @@ def windwos():
 
     # region Graph
     def visualize_decision_boundary(Weight, X_TEST, Y_TEST):
+        fig, ax = plt.subplots(figsize=(8, 6))
 
-        fig, ax = plt.subplots(figsize=(8, 6))  # Creating a figure and axis for the plot
+        X_TEST_reset = X_TEST.reset_index(drop=True)
+        Y_TEST_reset = Y_TEST.reset_index(drop=True)
 
-        # Reset the index to avoid issues related to duplicate indices
-        X_TEST_reset = X_TEST.reset_index(drop=True)  # Reset the index for X_TEST
-        Y_TEST_reset = Y_TEST.reset_index(drop=True)  # Reset the index for Y_TEST
+        ax.scatter(X_TEST_reset.iloc[:, 0], X_TEST_reset.iloc[:, 1], c=Y_TEST_reset['Class'], cmap='coolwarm',
+                   label='Data Points')
 
-        # Getting the unique class labels present in the 'Class' column
-        unique_classes = Y_TEST_reset.unique()
-
-        # Separating the classes based on 'Class' label (assuming it's the label column)
-        class1 = X_TEST.iloc[:20,:]  # Data points of Class 1
-        class2 = X_TEST.iloc[20:,:]  # Data points of Class 2
-
-        # Feature names to use in the plot
-        feature1_name = X_TEST_reset.columns[0]  # Assuming the first feature name
-        feature2_name = X_TEST_reset.columns[1]  # Assuming the second feature name
-
-        # Plotting the scattered points of both classes
-        ax.scatter(class1.iloc[:, 0], class1.iloc[:, 1], label=f'{unique_classes[0]}', color='blue')
-        ax.scatter(class2.iloc[:, 0], class2.iloc[:, 1], label=f'{unique_classes[1]}', color='red')
-
-        # Drawing the decision boundary
-        if len(Weight) > 2:
-            # For Weight with more than 2 indices, calculate a line based on the Weight values
-            slope = -Weight[1] / Weight[2]
-            intercept = -Weight[0] / Weight[2]
+        if len(Weight) == 2:  # For 2D classification with two weights (1 bias + 1 weight for 2D)
+            bias, weight1 = Weight[0], Weight[1]
             x_values = np.linspace(X_TEST_reset.iloc[:, 0].min(), X_TEST_reset.iloc[:, 0].max(), 100)
-            y_values = slope * x_values + intercept
-            # Plotting the decision boundary line
-            ax.plot(x_values, y_values, label='Decision Boundary', color='green')
-        else:
-            # For Weight array with fewer elements (only 2 indices), plotting a vertical line (example)
-            boundary_x = -Weight[0] / Weight[1]  # Assuming a vertical line at x = Weight[0]/Weight[1]
-            ax.axvline(x=boundary_x, label='Decision Boundary', color='green')
+            y_values = (-bias - weight1 * x_values) / weight1
+        elif len(Weight) == 3:  # For 2D classification with three weights (1 bias + 2 weights for 2D)
+            bias, weight1, weight2 = Weight[0], Weight[1], Weight[2]
+            x_values = np.linspace(X_TEST_reset.iloc[:, 0].min(), X_TEST_reset.iloc[:, 0].max(), 100)
+            y_values = (-bias - weight1 * x_values) / weight2
 
-        ax.set_xlabel(feature1_name)  # Label for x-axis (Feature 1)
-        ax.set_ylabel(feature2_name)  # Label for y-axis (Feature 2)
-        ax.legend()  # Display the legend
-        ax.set_title('Decision Boundary and Test Data Distribution')  # Set the plot title
+        # Plot the decision boundary line
+        ax.plot(x_values, y_values, label='Decision Boundary', color='green')
 
-        plt.show()  # Display the plot
+        ax.set_xlabel(X_TEST_reset.columns[0])
+        ax.set_ylabel(X_TEST_reset.columns[1])
+        ax.legend()
+        ax.set_title('Decision Boundary and Test Data Distribution')
+
+        plt.show()
 
     # endregion
 
