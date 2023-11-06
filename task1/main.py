@@ -316,7 +316,7 @@ def windwos():
         data = pd.read_csv("Dry_Beans_Dataset.csv")  # read file
         class_data = data[data['Class'].isin(SelectedClass)]  # take two classes
         data = class_data[SelectedFeature]  # take two features only
-        data['Class'] = class_data.iloc[:,-1]
+        data['Class'] = class_data.iloc[:,-1] # add y column
 
         if(SelectedFeature[0] != "Area"):  # convert from string to float
             data[SelectedFeature[0]] = data[SelectedFeature[0]].str.replace("٫", ".").astype(float)
@@ -326,11 +326,11 @@ def windwos():
 
         data = data.fillna(data.mean())  # fillna
 
-        Class1 = data.iloc[:50, :]
-        Class2 = data.iloc[50:, :]
+        Class1 = data.iloc[:50, :] # seperate data and take first class
+        Class2 = data.iloc[50:, :] # seperate data and take second class
 
-        x_train1, x_test1, y_train1, y_test1 = train_test_split(Class1.iloc[:, :-1].values, Class1.iloc[:, -1].values, test_size = 20, random_state = 200)
-        x_train2, x_test2, y_train2, y_test2 = train_test_split(Class2.iloc[:, :-1].values, Class2.iloc[:, -1].values, test_size = 20, random_state = 200)
+        x_train1, x_test1, y_train1, y_test1 = train_test_split(Class1.iloc[:, :-1].values, Class1.iloc[:, -1].values, test_size = 20, random_state = 200) # 30/20
+        x_train2, x_test2, y_train2, y_test2 = train_test_split(Class2.iloc[:, :-1].values, Class2.iloc[:, -1].values, test_size = 20, random_state = 200) # 30/20
 
         x_train1 = pd.DataFrame(x_train1, columns=Class1.iloc[:, :-1].columns)
         x_test1 = pd.DataFrame(x_test1, columns=Class1.iloc[:, :-1].columns)
@@ -342,10 +342,13 @@ def windwos():
         y_train2 = pd.DataFrame(y_train2, columns=[Class1.columns[-1]])
         y_test2 = pd.DataFrame(y_test2, columns=[Class1.columns[-1]])
 
-        X_TRAIN = pd.concat([x_train1, x_train2], axis=0)
-        X_TRAIN = scaler.fit_transform(X_TRAIN)
-        X_TEST = pd.concat([x_test1, x_test2], axis=0)
-        X_TEST = scaler.fit_transform(X_TEST)
+        X_TRAIN1 = pd.concat([x_train1, x_train2], axis=0)
+        X_TRAIN = scaler.fit_transform(X_TRAIN1)
+        X_TRAIN = pd.DataFrame(X_TRAIN, columns=X_TRAIN1.columns)
+
+        X_TEST1 = pd.concat([x_test1, x_test2], axis=0)
+        X_TEST = scaler.fit_transform(X_TEST1)
+        X_TEST = pd.DataFrame(X_TEST, columns=X_TEST1.columns)
 
         Y_TRAIN = pd.concat([y_train1, y_train2], axis=0)
         Y_TRAIN['Class'] = label_encoder.fit_transform(Y_TRAIN)
@@ -358,19 +361,20 @@ def windwos():
     def Perceptron(Weight, X_TRAIN, Y_TRAIN, learning_rate, num_epochs):
 
         def signum(x):
-            if( x > 0 ):
+            if(x > 0):
                 return 1
-            elif( x == 0 ):
+            elif(x == 0):
                 return 0
-            elif( x < 0):
+            else:
                 return -1
 
+        X_TRAIN = X_TRAIN.to_numpy()
         for epoch in range(num_epochs):
 
             for i in range(len(X_TRAIN)):
                 predict = signum(np.dot(Weight.T, X_TRAIN[i]))
-                if (predict != Y_TRAIN[i]):
-                    loss = Y_TRAIN[i] - predict
+                if (predict != Y_TRAIN.iloc[i,0]):
+                    loss = Y_TRAIN.iloc[i,0] - predict
                     Weight += learning_rate * loss * X_TRAIN[i]
 
         return Weight
@@ -395,22 +399,25 @@ def windwos():
         Y_TEST = Y_TEST.to_numpy()
 
         for i in range(m):
-            if yPredTest[i] == Y_TEST[i]:
+            if yPredTest[i] != Y_TEST[i]:
                 wrong += 1
 
-        return ((wrong / len(X_TEST)) * 100)
+        Accuracy = ( ( (m-wrong) / m ) * 100)
+
+        return Accuracy,y_pred
 
     def AdaLine(Weight, X_TRAIN, Y_TRAIN, learning_rate, num_epochs, MSE):
 
         m = len(X_TRAIN)
         for epoch in range(num_epochs):
             for i in range(len(X_TRAIN)):
-                y_pred = np.dot(Weight.T, X_TRAIN[i])
-                loss = Y_TRAIN[i] - y_pred
-                Weight += learning_rate * loss * X_TRAIN[i]
-            # mse = np.mean((Y_TRAIN - np.dot(X_TRAIN, Weight)) ** 2)
-            mse = 1/(2*m) * np.sum((Y_TRAIN - np.dot(X_TRAIN, Weight))**2)
-            print("MSE:", mse)
+                y_pred = np.dot(Weight.T, X_TRAIN.iloc[i])
+                loss = Y_TRAIN.iloc[i,0] - y_pred
+                Weight += learning_rate * loss * X_TRAIN.to_numpy()[i]
+
+            predictions = np.dot(X_TRAIN, Weight.transpose())
+            mse = 1 / (2 * m) * np.sum((Y_TRAIN.to_numpy() - predictions) ** 2)
+
             if mse <= MSE:
                 print(f"Training stopped at epoch {epoch} because MSE reached the threshold.")
                 break
@@ -418,8 +425,9 @@ def windwos():
 
     def AdaLine_Test(Weight, X_TEST, Y_TEST):
 
-        mse = np.mean((Y_TEST - X_TEST.dot(Weight.T)) ** 2)
-        return mse
+        prediction = X_TEST.dot(Weight.transpose())
+        mse = 1/(2*len(X_TEST)) * np.sum((Y_TEST.to_numpy() - prediction)**2)
+        return mse,prediction
 
     def main(SelectedClass, SelectedFeature, BiasVal):
 
@@ -452,17 +460,23 @@ def windwos():
         # endregion
 
         # region Algo
-
+        prediction = 0
         if(Algo == "Perceptron"):
             new_Weight = Perceptron(Weight, X_TRAIN, Y_TRAIN, learning_rate, num_epochs)
-            Accuracy = Perceptron_Test(new_Weight, X_TEST, Y_TEST)
+            Accuracy,prediction = Perceptron_Test(new_Weight, X_TEST, Y_TEST)
             print(f"Perceptron Accuracy =  {Accuracy} % ")
         else:
             new_Weight = AdaLine(Weight, X_TRAIN, Y_TRAIN, learning_rate, num_epochs, MSE)
-            # Accuracy = AdaLine_Test(new_Weight, X_TEST, Y_TEST)
-            # print(f"AdaLine Accuracy =  {Accuracy} % ")
+            Accuracy,prediction = AdaLine_Test(new_Weight, X_TEST, Y_TEST)
+            print(f"AdaLine Accuracy =  {Accuracy} % ")
+
         # endregion
 
+        # region Confusion Matrix
+
+
+
+        # endregion
 
     form1()
 
