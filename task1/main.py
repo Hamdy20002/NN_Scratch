@@ -6,6 +6,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 import warnings
 import random
+import numpy as np
+from sklearn.preprocessing import StandardScaler
 
 # region global var
 
@@ -13,6 +15,7 @@ selected_class = []
 selected_feature = []
 bias = 0
 label_encoder = LabelEncoder()
+scaler = StandardScaler()
 
 # endregion
 
@@ -222,9 +225,9 @@ def windwos():
 
             try:
 
-                Learning = int(Learning)
+                Learning = float(Learning)
                 epochs = int(epochs)
-                MSE = int(MSE)
+                MSE = float(MSE)
 
                 global return_values
                 return_values = (
@@ -340,7 +343,9 @@ def windwos():
         y_test2 = pd.DataFrame(y_test2, columns=[Class1.columns[-1]])
 
         X_TRAIN = pd.concat([x_train1, x_train2], axis=0)
+        X_TRAIN = scaler.fit_transform(X_TRAIN)
         X_TEST = pd.concat([x_test1, x_test2], axis=0)
+        X_TEST = scaler.fit_transform(X_TEST)
 
         Y_TRAIN = pd.concat([y_train1, y_train2], axis=0)
         Y_TRAIN['Class'] = label_encoder.fit_transform(Y_TRAIN)
@@ -349,6 +354,72 @@ def windwos():
         Y_TEST['Class'] = label_encoder.fit_transform(Y_TEST)
 
         return X_TRAIN, X_TEST, Y_TRAIN, Y_TEST
+
+    def Perceptron(Weight, X_TRAIN, Y_TRAIN, learning_rate, num_epochs):
+
+        def signum(x):
+            if( x > 0 ):
+                return 1
+            elif( x == 0 ):
+                return 0
+            elif( x < 0):
+                return -1
+
+        for epoch in range(num_epochs):
+
+            for i in range(len(X_TRAIN)):
+                predict = signum(np.dot(Weight.T, X_TRAIN[i]))
+                if (predict != Y_TRAIN[i]):
+                    loss = Y_TRAIN[i] - predict
+                    Weight += learning_rate * loss * X_TRAIN[i]
+
+        return Weight
+
+    def Perceptron_Test(Weight, X_TEST, Y_TEST):
+
+        def signum(x):
+            if x > 0:
+                return 1
+            elif x == 0:
+                return 0
+            elif x < 0:
+                return -1
+
+        m = len(Y_TEST)
+        wrong = 0
+        y_pred = X_TEST.dot(Weight.transpose())
+
+        # Convert Pandas Series to NumPy arrays for element-wise comparison
+        yPredTest = y_pred.apply(signum).to_numpy()
+
+        Y_TEST = Y_TEST.to_numpy()
+
+        for i in range(m):
+            if yPredTest[i] == Y_TEST[i]:
+                wrong += 1
+
+        return ((wrong / len(X_TEST)) * 100)
+
+    def AdaLine(Weight, X_TRAIN, Y_TRAIN, learning_rate, num_epochs, MSE):
+
+        m = len(X_TRAIN)
+        for epoch in range(num_epochs):
+            for i in range(len(X_TRAIN)):
+                y_pred = np.dot(Weight.T, X_TRAIN[i])
+                loss = Y_TRAIN[i] - y_pred
+                Weight += learning_rate * loss * X_TRAIN[i]
+            # mse = np.mean((Y_TRAIN - np.dot(X_TRAIN, Weight)) ** 2)
+            mse = 1/(2*m) * np.sum((Y_TRAIN - np.dot(X_TRAIN, Weight))**2)
+            print("MSE:", mse)
+            if mse <= MSE:
+                print(f"Training stopped at epoch {epoch} because MSE reached the threshold.")
+                break
+        return Weight
+
+    def AdaLine_Test(Weight, X_TEST, Y_TEST):
+
+        mse = np.mean((Y_TEST - X_TEST.dot(Weight.T)) ** 2)
+        return mse
 
     def main(SelectedClass, SelectedFeature, BiasVal):
 
@@ -362,10 +433,13 @@ def windwos():
 
         if(BiasVal != 0):
             W0 = BiasVal
-            W1 = random.uniform(-1, 1)
+            W1 = random.random()
         else:
-            W0 = random.uniform(-1, 1)
-            W1 = random.uniform(-1, 1)
+            W0 = random.random()
+            W1 = random.random()
+
+        Weight = np.array([W0, W1])
+
 
 
         #endregion
@@ -375,8 +449,20 @@ def windwos():
         form2()
         if return_values is not None:
             learning_rate, num_epochs, MSE, Algo = return_values
-        print(learning_rate, num_epochs, MSE, Algo)
         # endregion
+
+        # region Algo
+
+        if(Algo == "Perceptron"):
+            new_Weight = Perceptron(Weight, X_TRAIN, Y_TRAIN, learning_rate, num_epochs)
+            Accuracy = Perceptron_Test(new_Weight, X_TEST, Y_TEST)
+            print(f"Perceptron Accuracy =  {Accuracy} % ")
+        else:
+            new_Weight = AdaLine(Weight, X_TRAIN, Y_TRAIN, learning_rate, num_epochs, MSE)
+            # Accuracy = AdaLine_Test(new_Weight, X_TEST, Y_TEST)
+            # print(f"AdaLine Accuracy =  {Accuracy} % ")
+        # endregion
+
 
     form1()
 
