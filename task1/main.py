@@ -8,6 +8,8 @@ import warnings
 import random
 import numpy as np
 from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+
 
 # region global var
 
@@ -21,6 +23,8 @@ scaler = StandardScaler()
 
 
 def windwos():
+
+    # region Forms
 
     def form1():
 
@@ -312,6 +316,8 @@ def windwos():
 
         root.mainloop()
 
+    # endregion
+
     def PreProcessing(SelectedClass, SelectedFeature):
         data = pd.read_csv("Dry_Beans_Dataset.csv")  # read file
         class_data = data[data['Class'].isin(SelectedClass)]  # take two classes
@@ -358,6 +364,54 @@ def windwos():
 
         return X_TRAIN, X_TEST, Y_TRAIN, Y_TEST
 
+    # region Graph
+    def visualize_decision_boundary(Weight, X_TEST, Y_TEST):
+
+        fig, ax = plt.subplots(figsize=(8, 6))  # Creating a figure and axis for the plot
+
+        # Reset the index to avoid issues related to duplicate indices
+        X_TEST_reset = X_TEST.reset_index(drop=True)  # Reset the index for X_TEST
+        Y_TEST_reset = Y_TEST.reset_index(drop=True)  # Reset the index for Y_TEST
+
+        # Getting the unique class labels present in the 'Class' column
+        unique_classes = Y_TEST_reset.unique()
+
+        # Separating the classes based on 'Class' label (assuming it's the label column)
+        class1 = X_TEST.iloc[:20,:]  # Data points of Class 1
+        class2 = X_TEST.iloc[20:,:]  # Data points of Class 2
+
+        # Feature names to use in the plot
+        feature1_name = X_TEST_reset.columns[0]  # Assuming the first feature name
+        feature2_name = X_TEST_reset.columns[1]  # Assuming the second feature name
+
+        # Plotting the scattered points of both classes
+        ax.scatter(class1.iloc[:, 0], class1.iloc[:, 1], label=f'{unique_classes[0]}', color='blue')
+        ax.scatter(class2.iloc[:, 0], class2.iloc[:, 1], label=f'{unique_classes[1]}', color='red')
+
+        # Drawing the decision boundary
+        if len(Weight) > 2:
+            # For Weight with more than 2 indices, calculate a line based on the Weight values
+            slope = -Weight[1] / Weight[2]
+            intercept = -Weight[0] / Weight[2]
+            x_values = np.linspace(X_TEST_reset.iloc[:, 0].min(), X_TEST_reset.iloc[:, 0].max(), 100)
+            y_values = slope * x_values + intercept
+            # Plotting the decision boundary line
+            ax.plot(x_values, y_values, label='Decision Boundary', color='green')
+        else:
+            # For Weight array with fewer elements (only 2 indices), plotting a vertical line (example)
+            boundary_x = -Weight[0] / Weight[1]  # Assuming a vertical line at x = Weight[0]/Weight[1]
+            ax.axvline(x=boundary_x, label='Decision Boundary', color='green')
+
+        ax.set_xlabel(feature1_name)  # Label for x-axis (Feature 1)
+        ax.set_ylabel(feature2_name)  # Label for y-axis (Feature 2)
+        ax.legend()  # Display the legend
+        ax.set_title('Decision Boundary and Test Data Distribution')  # Set the plot title
+
+        plt.show()  # Display the plot
+
+    # endregion
+
+    # region Perceptron
     def Perceptron(Weight, X_TRAIN, Y_TRAIN, learning_rate, num_epochs):
 
         def signum(x):
@@ -365,7 +419,7 @@ def windwos():
                 return 1
             elif(x == 0):
                 return 0
-            else:
+            elif(x < 0):
                 return -1
 
         X_TRAIN = X_TRAIN.to_numpy()
@@ -404,8 +458,11 @@ def windwos():
 
         Accuracy = ( ( (m-wrong) / m ) * 100)
 
-        return Accuracy,y_pred
+        return Accuracy,yPredTest
 
+    # endregion
+
+    # region AdaLine
     def AdaLine(Weight, X_TRAIN, Y_TRAIN, learning_rate, num_epochs, MSE):
 
         m = len(X_TRAIN)
@@ -426,10 +483,30 @@ def windwos():
     def AdaLine_Test(Weight, X_TEST, Y_TEST):
 
         prediction = X_TEST.dot(Weight.transpose())
-        mse = 1/(2*len(X_TEST)) * np.sum((Y_TEST.to_numpy() - prediction)**2)
+        mse = 1/(2*len(X_TEST)) * np.sum((Y_TEST.to_numpy() - prediction.to_numpy())**2)
         return mse,prediction
 
+    # endregion
+
     def main(SelectedClass, SelectedFeature, BiasVal):
+
+        def confusion_matrix(true_labels, predicted_labels):
+            true_positive, true_negative, false_positive, false_negative = 0, 0, 0, 0
+            for i in range(len(predicted_labels)):
+                true_label = true_labels.iloc[i, 0]
+                predicted_label = predicted_labels[i]
+                if true_label == 1 and predicted_label == 1:
+                    true_positive += 1
+                elif true_label == 0 and predicted_label == 0:
+                    true_negative += 1
+                elif true_label == 0 and predicted_label == 1:
+                    false_positive += 1
+                elif true_label == 1 and predicted_label == 0:
+                    false_negative += 1
+
+            confusion_matrix = [[true_negative, false_positive], [false_negative, true_positive]]
+
+            return confusion_matrix
 
         # region get the Data
 
@@ -473,8 +550,13 @@ def windwos():
         # endregion
 
         # region Confusion Matrix
+        matrix = confusion_matrix(Y_TEST, prediction)
+        print("confusion_matrix", matrix)
+        # endregion
 
+        # region Graph
 
+        visualize_decision_boundary(new_Weight, X_TEST, Y_TEST)
 
         # endregion
 
