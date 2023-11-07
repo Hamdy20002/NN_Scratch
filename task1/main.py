@@ -10,7 +10,6 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 
-
 # region global var
 
 selected_class = []
@@ -335,8 +334,8 @@ def windwos():
         Class1 = data.iloc[:50, :] # seperate data and take first class
         Class2 = data.iloc[50:, :] # seperate data and take second class
 
-        x_train1, x_test1, y_train1, y_test1 = train_test_split(Class1.iloc[:, :-1].values, Class1.iloc[:, -1].values, test_size = 20, random_state = 200) # 30/20
-        x_train2, x_test2, y_train2, y_test2 = train_test_split(Class2.iloc[:, :-1].values, Class2.iloc[:, -1].values, test_size = 20, random_state = 200) # 30/20
+        x_train1, x_test1, y_train1, y_test1 = train_test_split(Class1.iloc[:, :-1].values, Class1.iloc[:, -1].values, test_size = 20, random_state = 20) # 30/20
+        x_train2, x_test2, y_train2, y_test2 = train_test_split(Class2.iloc[:, :-1].values, Class2.iloc[:, -1].values, test_size = 20, random_state = 20) # 30/20
 
         x_train1 = pd.DataFrame(x_train1, columns=Class1.iloc[:, :-1].columns)
         x_test1 = pd.DataFrame(x_test1, columns=Class1.iloc[:, :-1].columns)
@@ -364,8 +363,7 @@ def windwos():
 
         return X_TRAIN, X_TEST, Y_TRAIN, Y_TEST
 
-    # region Graph
-    def visualize_decision_boundary(Weight, X_TEST, Y_TEST):
+    def Graph(Weight, X_TEST, Y_TEST):
         fig, ax = plt.subplots(figsize=(8, 6))
 
         X_TEST_reset = X_TEST.reset_index(drop=True)
@@ -374,14 +372,10 @@ def windwos():
         ax.scatter(X_TEST_reset.iloc[:, 0], X_TEST_reset.iloc[:, 1], c=Y_TEST_reset['Class'], cmap='coolwarm',
                    label='Data Points')
 
-        if len(Weight) == 2:  # For 2D classification with two weights (1 bias + 1 weight for 2D)
-            bias, weight1 = Weight[0], Weight[1]
+        if len(Weight) == 2:  # For 2D classification with only two weights (no bias)
+            weight1, weight2 = Weight[0], Weight[1]
             x_values = np.linspace(X_TEST_reset.iloc[:, 0].min(), X_TEST_reset.iloc[:, 0].max(), 100)
-            y_values = (-bias - weight1 * x_values) / weight1
-        elif len(Weight) == 3:  # For 2D classification with three weights (1 bias + 2 weights for 2D)
-            bias, weight1, weight2 = Weight[0], Weight[1], Weight[2]
-            x_values = np.linspace(X_TEST_reset.iloc[:, 0].min(), X_TEST_reset.iloc[:, 0].max(), 100)
-            y_values = (-bias - weight1 * x_values) / weight2
+            y_values = (-weight1 * x_values) / weight2
 
         # Plot the decision boundary line
         ax.plot(x_values, y_values, label='Decision Boundary', color='green')
@@ -393,43 +387,42 @@ def windwos():
 
         plt.show()
 
-    # endregion
-
-    # region Perceptron
-    def Perceptron(Weight, X_TRAIN, Y_TRAIN, learning_rate, num_epochs):
-
-        def signum(x):
-            if(x > 0):
-                return 1
-            elif(x == 0):
-                return 0
-            elif(x < 0):
-                return -1
-
-        X_TRAIN = X_TRAIN.to_numpy()
-        for epoch in range(num_epochs):
-
-            for i in range(len(X_TRAIN)):
-                predict = signum(np.dot(Weight.T, X_TRAIN[i]))
-                if (predict != Y_TRAIN.iloc[i,0]):
-                    loss = Y_TRAIN.iloc[i,0] - predict
-                    Weight += learning_rate * loss * X_TRAIN[i]
-
-        return Weight
-
-    def Perceptron_Test(Weight, X_TEST, Y_TEST):
+    def Perceptron(Weight, X_TRAIN, Y_TRAIN, bias, learning_rate, num_epochs):
 
         def signum(x):
             if x > 0:
                 return 1
-            elif x == 0:
+            elif x <= 0:
+                return 0
+            elif x < 0:
+                return -1
+
+
+        X_TRAIN = X_TRAIN.to_numpy()
+        for epoch in range(num_epochs):
+            for i in range(len(X_TRAIN)):
+                predict = signum( np.dot(Weight.transpose(), X_TRAIN[i]) + bias)
+                if predict != Y_TRAIN.iloc[i,0]:
+                    loss = Y_TRAIN.iloc[i,0] - predict
+                    Weight += learning_rate * loss * X_TRAIN[i]
+                    if(bias != 0):
+                        bias += learning_rate * loss
+
+        return Weight, bias
+
+    def Test(Weight, X_TEST, Y_TEST, bias):
+
+        def signum(x):
+            if x > 0:
+                return 1
+            elif x <= 0:
                 return 0
             elif x < 0:
                 return -1
 
         m = len(Y_TEST)
         wrong = 0
-        y_pred = X_TEST.dot(Weight.transpose())
+        y_pred = ( X_TEST.dot(Weight.transpose()) + bias )
 
         # Convert Pandas Series to NumPy arrays for element-wise comparison
         yPredTest = y_pred.apply(signum).to_numpy()
@@ -444,33 +437,31 @@ def windwos():
 
         return Accuracy,yPredTest
 
-    # endregion
-
-    # region AdaLine
-    def AdaLine(Weight, X_TRAIN, Y_TRAIN, learning_rate, num_epochs, MSE):
+    def AdaLine(Weight, X_TRAIN, Y_TRAIN, bias, learning_rate, num_epochs, MSE):
 
         m = len(X_TRAIN)
         for epoch in range(num_epochs):
             for i in range(len(X_TRAIN)):
-                y_pred = np.dot(Weight.T, X_TRAIN.iloc[i])
+                y_pred = np.dot(Weight, X_TRAIN.iloc[i]) + bias
                 loss = Y_TRAIN.iloc[i,0] - y_pred
                 Weight += learning_rate * loss * X_TRAIN.to_numpy()[i]
+                if(bias != 0):
+                    bias += learning_rate * loss
 
             predictions = np.dot(X_TRAIN, Weight.transpose())
-            mse = 1 / (2 * m) * np.sum((Y_TRAIN.to_numpy() - predictions) ** 2)
+            mse = 1 / (2*m) * np.sum((Y_TRAIN.to_numpy() - predictions) ** 2)
 
             if mse <= MSE:
                 print(f"Training stopped at epoch {epoch} because MSE reached the threshold.")
                 break
-        return Weight
 
-    def AdaLine_Test(Weight, X_TEST, Y_TEST):
+        return Weight, bias
 
-        prediction = X_TEST.dot(Weight.transpose())
-        mse = 1/(2*len(X_TEST)) * np.sum((Y_TEST.to_numpy() - prediction.to_numpy())**2)
-        return mse,prediction
-
-    # endregion
+        # m = len(X_TEST)
+        # prediction = ( X_TEST.dot(Weight.transpose()) + bias )
+        # prediction = prediction.apply(signum)
+        # mse = 1/(2*m) * np.sum((Y_TEST.to_numpy() - prediction.to_numpy())**2)
+        # return mse, prediction
 
     def main(SelectedClass, SelectedFeature, BiasVal):
 
@@ -521,14 +512,15 @@ def windwos():
         # endregion
 
         # region Algo
+
         prediction = 0
         if(Algo == "Perceptron"):
-            new_Weight = Perceptron(Weight, X_TRAIN, Y_TRAIN, learning_rate, num_epochs)
-            Accuracy,prediction = Perceptron_Test(new_Weight, X_TEST, Y_TEST)
+            new_Weight,bias = Perceptron(Weight, X_TRAIN, Y_TRAIN, BiasVal ,learning_rate, num_epochs)
+            Accuracy,prediction = Test(new_Weight, X_TEST, Y_TEST, bias)
             print(f"Perceptron Accuracy =  {Accuracy} % ")
         else:
-            new_Weight = AdaLine(Weight, X_TRAIN, Y_TRAIN, learning_rate, num_epochs, MSE)
-            Accuracy,prediction = AdaLine_Test(new_Weight, X_TEST, Y_TEST)
+            new_Weight,bias = AdaLine(Weight, X_TRAIN, Y_TRAIN, BiasVal, learning_rate, num_epochs, MSE)
+            Accuracy,prediction = Test(new_Weight, X_TEST, Y_TEST, bias)
             print(f"AdaLine Accuracy =  {Accuracy} % ")
 
         # endregion
@@ -540,11 +532,12 @@ def windwos():
 
         # region Graph
 
-        visualize_decision_boundary(new_Weight, X_TEST, Y_TEST)
+        Graph(new_Weight, X_TEST, Y_TEST)
 
         # endregion
 
     form1()
+
 
 warnings.filterwarnings("ignore")
 windwos()
