@@ -50,7 +50,7 @@ def windwos():
 
 
             except:
-                messagebox.showerror("Error", "!!احا")
+                messagebox.showerror("Error", "Requirements not met")
 
             main(selected_class[-1], selected_feature[-1], val)
 
