@@ -397,7 +397,6 @@ def windwos():
             elif x < 0:
                 return -1
 
-
         X_TRAIN = X_TRAIN.to_numpy()
         for epoch in range(num_epochs):
             for i in range(len(X_TRAIN)):
@@ -409,6 +408,32 @@ def windwos():
                         bias += learning_rate * loss
 
         return Weight, bias
+
+    def AdaLine(Weight, X_TRAIN, Y_TRAIN, bias, learning_rate, num_epochs, MSE):
+
+        m = len(X_TRAIN)
+        for epoch in range(num_epochs):
+            for i in range(len(X_TRAIN)):
+                y_pred = np.dot(Weight, X_TRAIN.iloc[i]) + bias
+                loss = Y_TRAIN.iloc[i,0] - y_pred
+                Weight += learning_rate * loss * X_TRAIN.to_numpy()[i]
+                if(bias != 0):
+                    bias += learning_rate * loss
+
+            predictions = np.dot(X_TRAIN, Weight.transpose())
+            mse = 1 / (2*m) * np.sum((Y_TRAIN.to_numpy() - predictions) ** 2)
+
+            if mse <= MSE:
+                print(f"Training stopped at epoch {epoch} because MSE reached the threshold.")
+                break
+
+        return Weight, bias
+
+        # m = len(X_TEST)
+        # prediction = ( X_TEST.dot(Weight.transpose()) + bias )
+        # prediction = prediction.apply(signum)
+        # mse = 1/(2*m) * np.sum((Y_TEST.to_numpy() - prediction.to_numpy())**2)
+        # return mse, prediction
 
     def Test(Weight, X_TEST, Y_TEST, bias):
 
@@ -436,32 +461,6 @@ def windwos():
         Accuracy = ( ( (m-wrong) / m ) * 100)
 
         return Accuracy,yPredTest
-
-    def AdaLine(Weight, X_TRAIN, Y_TRAIN, bias, learning_rate, num_epochs, MSE):
-
-        m = len(X_TRAIN)
-        for epoch in range(num_epochs):
-            for i in range(len(X_TRAIN)):
-                y_pred = np.dot(Weight, X_TRAIN.iloc[i]) + bias
-                loss = Y_TRAIN.iloc[i,0] - y_pred
-                Weight += learning_rate * loss * X_TRAIN.to_numpy()[i]
-                if(bias != 0):
-                    bias += learning_rate * loss
-
-            predictions = np.dot(X_TRAIN, Weight.transpose())
-            mse = 1 / (2*m) * np.sum((Y_TRAIN.to_numpy() - predictions) ** 2)
-
-            if mse <= MSE:
-                print(f"Training stopped at epoch {epoch} because MSE reached the threshold.")
-                break
-
-        return Weight, bias
-
-        # m = len(X_TEST)
-        # prediction = ( X_TEST.dot(Weight.transpose()) + bias )
-        # prediction = prediction.apply(signum)
-        # mse = 1/(2*m) * np.sum((Y_TEST.to_numpy() - prediction.to_numpy())**2)
-        # return mse, prediction
 
     def main(SelectedClass, SelectedFeature, BiasVal):
 
