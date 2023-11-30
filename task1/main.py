@@ -363,7 +363,7 @@ def windwos():
 
         return X_TRAIN, X_TEST, Y_TRAIN, Y_TEST
 
-    def Graph(Weight, X_TEST, Y_TEST):
+    def Graph(Weight, X_TEST, Y_TEST, bias):
         fig, ax = plt.subplots(figsize=(8, 6))
 
         X_TEST_reset = X_TEST.reset_index(drop=True)
@@ -372,10 +372,14 @@ def windwos():
         ax.scatter(X_TEST_reset.iloc[:, 0], X_TEST_reset.iloc[:, 1], c=Y_TEST_reset['Class'], cmap='coolwarm',
                    label='Data Points')
 
-        if len(Weight) == 2:  # For 2D classification with only two weights (no bias)
+        if bias == 0:  # For 2D classification with only two weights (no bias)
             weight1, weight2 = Weight[0], Weight[1]
             x_values = np.linspace(X_TEST_reset.iloc[:, 0].min(), X_TEST_reset.iloc[:, 0].max(), 100)
             y_values = (-weight1 * x_values) / weight2
+        elif bias != 0:  # For 2D classification with three weights (1 bias + 2 weights for 2D)
+            weight1, weight2 = Weight[0], Weight[1]
+            x_values = np.linspace(X_TEST_reset.iloc[:, 0].min(), X_TEST_reset.iloc[:, 0].max(), 100)
+            y_values = (-bias - weight1 * x_values) / weight2
 
         # Plot the decision boundary line
         ax.plot(x_values, y_values, label='Decision Boundary', color='green')
@@ -531,7 +535,7 @@ def windwos():
 
         # region Graph
 
-        Graph(new_Weight, X_TEST, Y_TEST)
+        Graph(new_Weight, X_TEST, Y_TEST, bias)
 
         # endregion
 
